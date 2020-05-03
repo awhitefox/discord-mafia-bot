@@ -35,10 +35,12 @@ async def on_voice_state_update(member, before, after):
             await helpers.set_prefix(member, prefix)
         else:
             await helpers.set_prefix(member, 'Н')
+            await member.edit(mute=True)
 
     # If user left current voice
     elif before.channel == current_voice and after.channel != current_voice:
         await helpers.remove_prefix(member)
+        await member.edit(mute=False)
 
 
 # Commands
@@ -80,7 +82,7 @@ async def finish(ctx):
 
     for p in current_players:
         await helpers.remove_prefix(p)
-    await ctx.send(f'Игра в **{current_voice}** завершена.')
+    await ctx.send(f'Игра в **{current_voice}** завершена')
 
     current_voice = None
     current_players.clear()
