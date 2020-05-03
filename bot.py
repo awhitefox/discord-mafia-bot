@@ -10,9 +10,15 @@ import helpers
 
 load_dotenv()
 bot = commands.Bot(os.environ['PREFIX'])
+guild_id = int(os.environ['GUILD'])
 
 current_voice = None
 current_players = []
+
+
+@bot.check
+async def globally_check_server(ctx):
+    return ctx.guild is None or ctx.guild.id == guild_id
 
 
 # Events
