@@ -82,6 +82,7 @@ async def finish(ctx):
 
     for p in current_voice.members:
         await helpers.remove_prefix(p)
+        await p.edit(mute=False)
     await ctx.send(f'Игра в **{current_voice}** завершена')
 
     current_voice = None
