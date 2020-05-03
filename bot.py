@@ -1,6 +1,7 @@
 import os
 import random
 
+import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -83,6 +84,20 @@ async def finish(ctx):
 
     current_voice = None
     current_players.clear()
+
+
+# Commands for debugging
+
+@bot.command(aliases=['debug_sp'])
+@commands.is_owner()
+async def debug_set_prefix(ctx, member: discord.Member, prefix: str):
+    await helpers.set_prefix(member, prefix)
+
+
+@bot.command(aliases=['debug_rp'])
+@commands.is_owner()
+async def debug_remove_prefix(ctx, member: discord.Member):
+    await helpers.remove_prefix(member)
 
 
 bot.run(os.environ['TOKEN'])
