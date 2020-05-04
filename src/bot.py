@@ -1,15 +1,16 @@
 import os
-import random
 
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 
 import checks
 import helpers
 from game import Game
 
-load_dotenv()
+if os.path.isfile('../.env'):
+    from dotenv import load_dotenv
+    load_dotenv()
+
 bot = commands.Bot(os.environ['PREFIX'])
 guild_id = int(os.environ['GUILD'])
 game = None
