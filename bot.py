@@ -7,14 +7,12 @@ from dotenv import load_dotenv
 
 import checks
 import helpers
+from game import Game
 
 load_dotenv()
 bot = commands.Bot(os.environ['PREFIX'])
 guild_id = int(os.environ['GUILD'])
-
-current_voice = None
-current_players = []
-current_role = None
+game = None
 
 
 @bot.check
@@ -26,25 +24,22 @@ async def globally_check_server(ctx):
 
 @bot.event
 async def on_ready():
-    print('Ready')
+    global game
+    game = Game(await bot.fetch_guild(guild_id))
+    print('Ready!')
 
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if member.bot:
+    if member.bot or not game.is_running():
         return
 
     # If user joined current voice and game is running
-    if current_voice is not None and before.channel != current_voice and after.channel == current_voice:
-        if member in current_players:
-            i = current_players.index(member)
-            prefix = f'{i:02d}' if i != 0 else 'В'
-            await helpers.set_prefix(member, prefix)
-        else:
-            await helpers.set_prefix(member, 'Н')
+    if before.channel != game.voice_channel and after.channel == game.voice_channel:
+        await helpers.set_prefix(member, game.get_prefix(member))
 
     # If user left current voice
-    elif before.channel == current_voice and after.channel != current_voice:
+    elif before.channel == game.voice_channel and after.channel != game.voice_channel:
         await helpers.remove_prefix(member)
 
 
@@ -58,53 +53,30 @@ async def ping(ctx):
 @bot.command()
 @checks.voice_only()
 async def start(ctx):
-    global current_voice, current_role
-    if current_voice is not None:
+    if game.is_running():
         await ctx.send('Игра уже запущена')
         return
-    current_voice = ctx.author.voice.channel
 
-    # Put everybody in voice channel except bots and message author in current_players
-    current_players.extend(filter(lambda x: not (x.bot or x == ctx.author), current_voice.members))
-    # Shuffle players and put author on first place
-    random.shuffle(current_players)
-    current_players.insert(0, ctx.author)
+    await game.start_game(ctx.author.voice.channel, ctx.author)
+    await ctx.send(f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
 
-    # Disallow @everyone to speak in current channel
-    await current_voice.set_permissions(ctx.guild.default_role, speak=False)
-    # Create role for player and allow them to speak
-    current_role = await ctx.guild.create_role(name='Игрок')
-    await current_voice.set_permissions(current_role, speak=True)
-    for p in current_players:
-        await p.add_roles(current_role)
-
-    await ctx.send(f'Игра начинается в **{current_voice}**! Ведущий - {ctx.author.mention}')
-
-    await helpers.set_prefix(ctx.author, 'В')
-    for i in range(1, len(current_players)):
-        await helpers.set_prefix(current_players[i], f'{i:02d}')
+    for p in game.players:
+        await helpers.set_prefix(p, game.get_prefix(p))
 
 
 @bot.command()
 @commands.guild_only()
 async def finish(ctx):
-    global current_voice, current_role
-    if current_voice is None:
+    if not game.is_running():
         await ctx.send('Игра не запущена')
         return
 
     # Remove prefixes
-    for p in current_voice.members:
+    for p in game.players:
         await helpers.remove_prefix(p)
-    # Allow @everybody to speak and delete current_role
-    await current_voice.set_permissions(ctx.guild.default_role, speak=None)
-    await current_role.delete()
 
-    await ctx.send(f'Игра в **{current_voice}** завершена')
-
-    current_voice = None
-    current_players.clear()
-    current_role = None
+    await ctx.send(f'Игра в **{game.voice_channel}** завершена')
+    await game.finish_game()
 
 
 # Commands for debugging
