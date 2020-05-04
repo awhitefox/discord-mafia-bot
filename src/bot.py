@@ -73,7 +73,7 @@ async def finish(ctx):
         return
 
     # Remove prefixes
-    for p in game.players:
+    for p in game.voice_channel.members:
         await helpers.remove_prefix(p)
 
     await ctx.send(f'Игра в **{game.voice_channel}** завершена')
