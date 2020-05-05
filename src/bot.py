@@ -51,7 +51,7 @@ async def globally_check_server(ctx):
 
 @bot.command()
 async def ping(ctx):
-    await ctx.send(f':ping_pong:  {round(bot.latency * 1000)}ms')
+    await ctx.send(f':ping_pong: {round(bot.latency * 1000)}ms')
 
 
 @bot.command()
@@ -61,13 +61,15 @@ async def start(ctx):
         if game.is_running():
             await ctx.send('Игра уже запущена')
             return
-
         await game.start_game(ctx.author.voice.channel, ctx.author)
-        await ctx.send(
-            f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
 
+        # Set prefixes
+        await ctx.send(':gear: Раздаем префиксы...')
         for p in game.players:
             await helpers.set_prefix(p, game.get_prefix(p))
+
+        await ctx.send(
+            f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
 
 
 @bot.command()
@@ -79,6 +81,7 @@ async def finish(ctx):
             return
 
         # Remove prefixes
+        await ctx.send(':gear: Убираем префиксы...')
         for p in game.voice_channel.members:
             await helpers.remove_prefix(p)
 
