@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import discord
@@ -12,13 +13,8 @@ if os.path.isfile('../.env'):
     load_dotenv()
 
 bot = commands.Bot(os.environ['PREFIX'])
-guild_id = int(os.environ['GUILD'])
 game = None
-
-
-@bot.check
-async def globally_check_server(ctx):
-    return ctx.guild is None or ctx.guild.id == guild_id
+game_state_lock = asyncio.Lock()
 
 
 # Events
@@ -26,7 +22,7 @@ async def globally_check_server(ctx):
 @bot.event
 async def on_ready():
     global game
-    game = Game(await bot.fetch_guild(guild_id))
+    game = Game(await bot.fetch_guild(int(os.environ['GUILD'])))
     print('Ready!')
 
 
@@ -44,6 +40,13 @@ async def on_voice_state_update(member, before, after):
         await helpers.remove_prefix(member)
 
 
+# Global checks
+
+@bot.check
+async def globally_check_server(ctx):
+    return ctx.guild is None or ctx.guild == game.guild
+
+
 # Commands
 
 @bot.command()
@@ -54,30 +57,33 @@ async def ping(ctx):
 @bot.command()
 @checks.voice_only()
 async def start(ctx):
-    if game.is_running():
-        await ctx.send('Игра уже запущена')
-        return
+    async with game_state_lock:
+        if game.is_running():
+            await ctx.send('Игра уже запущена')
+            return
 
-    await game.start_game(ctx.author.voice.channel, ctx.author)
-    await ctx.send(f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
+        await game.start_game(ctx.author.voice.channel, ctx.author)
+        await ctx.send(
+            f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
 
-    for p in game.players:
-        await helpers.set_prefix(p, game.get_prefix(p))
+        for p in game.players:
+            await helpers.set_prefix(p, game.get_prefix(p))
 
 
 @bot.command()
 @commands.guild_only()
 async def finish(ctx):
-    if not game.is_running():
-        await ctx.send('Игра не запущена')
-        return
+    async with game_state_lock:
+        if not game.is_running():
+            await ctx.send('Игра не запущена')
+            return
 
-    # Remove prefixes
-    for p in game.voice_channel.members:
-        await helpers.remove_prefix(p)
+        # Remove prefixes
+        for p in game.voice_channel.members:
+            await helpers.remove_prefix(p)
 
-    await ctx.send(f'Игра в **{game.voice_channel}** завершена')
-    await game.finish_game()
+        await ctx.send(f'Игра в **{game.voice_channel}** завершена')
+        await game.finish_game()
 
 
 # Commands for debugging
