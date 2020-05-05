@@ -14,7 +14,7 @@ class Game:
 
     async def start_game(self, voice_c: discord.VoiceChannel, master):
         if self.is_running():
-            raise ValueError('Game is already running')
+            raise RuntimeError('Game is already running')
 
         self.voice_channel = voice_c
         self.players.extend(filter(lambda x: not (x.bot or x == master),
@@ -34,7 +34,7 @@ class Game:
 
     async def finish_game(self):
         if not self.is_running():
-            raise ValueError('Game is not running')
+            raise RuntimeError('Game is not running')
 
         # Allow @everybody to speak and delete current_role
         await self.voice_channel.set_permissions(self.guild.default_role, speak=None)
