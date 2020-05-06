@@ -17,12 +17,13 @@ class Game:
             raise RuntimeError('Game is already running')
 
         self.voice_channel = voice_c
-        self.players.extend(filter(lambda x: not (x.bot or x == master),
-                                   self.voice_channel.members))
+        for m in self.voice_channel.members:
+            if not m.bot and not m == master:
+                self.players.append(Player(m))
 
         # Shuffle players and put master on first place
         random.shuffle(self.players)
-        self.players.insert(0, master)
+        self.players.insert(0, Player(master))
 
         # Disallow @everyone to speak in current channel
         await self.voice_channel.set_permissions(self.guild.default_role, speak=False)
@@ -30,7 +31,7 @@ class Game:
         self.player_role = await self.guild.create_role(name='Игрок')
         await self.voice_channel.set_permissions(self.player_role, speak=True)
         for p in self.players:
-            await p.add_roles(self.player_role)
+            await p.member.add_roles(self.player_role)
 
     async def finish_game(self):
         if not self.is_running():
@@ -44,9 +45,13 @@ class Game:
         self.player_role = None
         self.players.clear()
 
-    def get_prefix(self, member):
-        if member in self.players:
-            i = self.players.index(member)
-            return f'{self.players.index(member):02d}' if i != 0 else 'В'
-        else:
-            return 'Н'
+    def get_prefix(self, member: discord.Member):
+        for i in range(len(self.players)):
+            if self.players[i].member == member:
+                return f'{i:02d}' if i != 0 else 'В'
+        return 'Н'
+
+
+class Player:
+    def __init__(self, member: discord.Member):
+        self.member = member

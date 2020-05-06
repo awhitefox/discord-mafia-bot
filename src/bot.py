@@ -33,11 +33,11 @@ async def on_voice_state_update(member, before, after):
 
     # If user joined current voice and game is running
     if before.channel != game.voice_channel and after.channel == game.voice_channel:
-        await helpers.set_prefix(member, game.get_prefix(member))
+        await helpers.try_set_prefix(member, game.get_prefix(member))
 
     # If user left current voice
     elif before.channel == game.voice_channel and after.channel != game.voice_channel:
-        await helpers.remove_prefix(member)
+        await helpers.try_remove_prefix(member)
 
 
 # Global checks
@@ -66,7 +66,7 @@ async def start(ctx):
         # Set prefixes
         await ctx.send(':gear: Раздаем префиксы...')
         for p in game.players:
-            await helpers.set_prefix(p, game.get_prefix(p))
+            await helpers.try_set_prefix(p.member, game.get_prefix(p.member))
 
         await ctx.send(
             f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
@@ -83,7 +83,7 @@ async def finish(ctx):
         # Remove prefixes
         await ctx.send(':gear: Убираем префиксы...')
         for p in game.voice_channel.members:
-            await helpers.remove_prefix(p)
+            await helpers.try_remove_prefix(p)
 
         await ctx.send(f'Игра в **{game.voice_channel}** завершена')
         await game.finish_game()
@@ -94,13 +94,13 @@ async def finish(ctx):
 @bot.command(aliases=['debug_sp'])
 @commands.is_owner()
 async def debug_set_prefix(ctx, member: discord.Member, prefix: str):
-    await helpers.set_prefix(member, prefix)
+    await helpers.try_set_prefix(member, prefix)
 
 
 @bot.command(aliases=['debug_rp'])
 @commands.is_owner()
 async def debug_remove_prefix(ctx, member: discord.Member):
-    await helpers.remove_prefix(member)
+    await helpers.try_remove_prefix(member)
 
 
 bot.run(os.environ['TOKEN'])
