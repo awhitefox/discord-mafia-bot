@@ -10,7 +10,7 @@ from game import Game
 
 if os.path.isfile('../.env'):
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(encoding='utf8')
 
 bot = commands.Bot(os.environ['PREFIX'])
 game = None
@@ -23,6 +23,8 @@ game_state_lock = asyncio.Lock()
 async def on_ready():
     global game
     game = Game(await bot.fetch_guild(int(os.environ['GUILD'])))
+    if 'STATUS' in os.environ:
+        await bot.change_presence(activity=discord.Game(os.environ['STATUS']))
     print('Ready!')
 
 
