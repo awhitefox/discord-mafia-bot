@@ -56,7 +56,7 @@ async def ping(ctx):
     await ctx.send(f':ping_pong: {round(bot.latency * 1000)}ms')
 
 
-@bot.command()
+@bot.command(aliases=['begin'])
 @checks.voice_only()
 async def start(ctx):
     async with game_state_lock:
@@ -74,7 +74,7 @@ async def start(ctx):
             f'Игра начинается в **{game.voice_channel}**! Ведущий - {ctx.author.mention}')
 
 
-@bot.command()
+@bot.command(aliases=['end'])
 @commands.guild_only()
 async def finish(ctx):
     async with game_state_lock:
